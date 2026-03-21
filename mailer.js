@@ -1,16 +1,13 @@
 const nodemailer = require("nodemailer");
 
 const transporter = nodemailer.createTransport({
-  host: "smtp.ionos.co.uk",
-  port: 587,
-  secure: false,
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
   auth: {
-    user: "info@jarholidays.co.uk",
-    pass: "Safety99?!?"
-  },
-  connectionTimeout: 5000, // 5 seconds
-  greetingTimeout: 5000,
-  socketTimeout: 5000
+    user: "jarshortbreaks@gmail.com",
+    pass: "clyegpzmnmvjvzgw" // ← no spaces
+  }
 });
 
 async function sendEmail(subject, message) {
@@ -18,7 +15,7 @@ async function sendEmail(subject, message) {
     console.log("📧 Trying to send email...");
 
     const info = await transporter.sendMail({
-      from: '"Jar Holidays Leads" <info@jarholidays.co.uk>',
+      from: '"Jar Holidays Leads" <yourgmail@gmail.com>',
       to: "info@jarholidays.co.uk",
       subject: subject,
       text: message
