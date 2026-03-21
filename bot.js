@@ -6,34 +6,22 @@ const sendEmail = require("./mailer");
 let replyIndex = 0;
 const seenPosts = new Set();
 
-// 🔥 STATUS OBJECT
-let status = {
-  running: false,
-  loggedIn: false,
-  lastScan: null,
-  postsChecked: 0,
-  matchesFound: 0
-};
+// 🔥 CHANGE THIS TO YOUR REAL URL
+const API_URL = "https://fb-lead-bot-production.up.railway.app/api/status";
 
-// 🔥 UPDATE STATUS (IMPORTANT: replace URL with YOUR real one)
+// STATUS UPDATE
 async function updateStatus(update) {
   try {
-    await fetch("https://fb-lead-bot-production.up.railway.app/api/status", {
+    await fetch(API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify(update)
     });
-
-    console.log("📡 Status updated:", update);
-
-  } catch (e) {
-    console.log("❌ Status update failed:", e.message);
-  }
+  } catch {}
 }
 
-// LOAD DATA
 function loadData() {
   try {
     return JSON.parse(fs.readFileSync("./data.json"));
@@ -42,7 +30,6 @@ function loadData() {
   }
 }
 
-// ROTATE REPLIES
 function getNextReply(replies) {
   if (!replies.length) return "Hi! I can help 🙂";
   const reply = replies[replyIndex];
@@ -50,65 +37,59 @@ function getNextReply(replies) {
   return reply;
 }
 
-// MAIN BOT
 async function runBot() {
-  console.log("🔍 Scanning for leads...");
+  console.log("🔍 Scanning...");
 
   const data = loadData();
 
-  if (!data.groups.length) {
-    console.log("❌ No groups added");
-    return;
-  }
-
-  // RESET STATUS
-  status = {
+  await updateStatus({
     running: true,
-    loggedIn: false,
+    loggedIn: true,
     lastScan: new Date().toLocaleTimeString(),
     postsChecked: 0,
     matchesFound: 0
-  };
-
-  await updateStatus(status);
-
-  const browser = await chromium.launch({
-    headless: true,
-    args: ["--no-sandbox"]
   });
 
-  const page = await browser.newPage();
+  let browser;
 
   try {
-    console.log("🔐 Logging into Facebook...");
+    browser = await chromium.launch({
+      headless: true,
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage"
+      ]
+    });
+  } catch (err) {
+    console.log("❌ Browser failed:", err.message);
+    return;
+  }
 
-    await page.goto("https://www.facebook.com/");
-    await page.fill("#email", "camplarry2024@jarholidays.co.uk");
-    await page.fill("#pass", "Safety99!!");
-    await page.click("button[name='login']");
-    await page.waitForTimeout(8000);
+  const context = await browser.newContext({
+    storageState: "storageState.json" // 🔥 USE SAVED LOGIN
+  });
 
-    // LOGIN SUCCESS
-    status.loggedIn = true;
-    await updateStatus({ loggedIn: true });
+  const page = await context.newPage();
 
+  let postsChecked = 0;
+  let matchesFound = 0;
+
+  try {
     for (const group of data.groups) {
-      console.log("📂 Checking group:", group);
+      console.log("📂 Checking:", group);
 
       await page.goto(group);
       await page.waitForTimeout(5000);
 
       const posts = await page.$$("[role='article']");
-      console.log(`📝 Found ${posts.length} posts`);
 
       for (const post of posts) {
         const text = await post.innerText();
         if (!text) continue;
 
-        status.postsChecked++;
-        await updateStatus({ postsChecked: status.postsChecked });
-
-        console.log("📝 Post:", text.slice(0, 80));
+        postsChecked++;
+        await updateStatus({ postsChecked });
 
         const lower = text.toLowerCase();
 
@@ -118,54 +99,44 @@ async function runBot() {
 
         if (!matched) continue;
 
-        console.log("✅ MATCH FOUND!");
-
-        status.matchesFound++;
-        await updateStatus({ matchesFound: status.matchesFound });
+        matchesFound++;
+        await updateStatus({ matchesFound });
 
         const linkEl = await post.$("a[href*='/posts/']");
         if (!linkEl) continue;
 
         const link = await linkEl.getAttribute("href");
-        if (!link || seenPosts.has(link)) {
-          console.log("⚠️ Already seen post");
-          continue;
-        }
+        if (!link || seenPosts.has(link)) continue;
 
         seenPosts.add(link);
 
         const reply = getNextReply(data.replies);
 
         const message = `
-🔥 New Caravan Lead
+🔥 New Lead
 
-Post:
-"${text.slice(0, 300)}..."
+"${text.slice(0, 200)}"
 
-💬 Reply:
+Reply:
 "${reply}"
 
-👉 Open post:
 https://facebook.com${link}
 `;
 
-        console.log("📧 Sending email...");
-        await sendEmail("🔥 New Caravan Lead", message);
-        console.log("✅ Email sent for lead");
+        await sendEmail("🔥 Lead Found", message);
+        console.log("📧 Email sent");
       }
     }
 
   } catch (err) {
-    console.error("❌ Bot error:", err.message);
+    console.log("❌ Bot error:", err.message);
   }
 
   await browser.close();
 }
 
 // RUN EVERY 10 MINUTES
-cron.schedule("*/10 * * * *", () => {
-  runBot();
-});
+cron.schedule("*/10 * * * *", runBot);
 
 // RUN ON START
 runBot();
