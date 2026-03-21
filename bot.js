@@ -6,7 +6,7 @@ const sendEmail = require("./mailer");
 let replyIndex = 0;
 const seenPosts = new Set();
 
-// 🔥 STATUS OBJECT (local tracking)
+// 🔥 STATUS OBJECT
 let status = {
   running: false,
   loggedIn: false,
@@ -15,21 +15,25 @@ let status = {
   matchesFound: 0
 };
 
-// 🔥 Send status to server
+// 🔥 UPDATE STATUS (IMPORTANT: replace URL with YOUR real one)
 async function updateStatus(update) {
   try {
-await fetch("https://fb-lead-bot-production.up.railway.app//api/status", {
-  method: "POST",
+    await fetch("https://fb-lead-bot-production.up.railway.app/api/status", {
+      method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify(update)
     });
+
+    console.log("📡 Status updated:", update);
+
   } catch (e) {
-    console.log("Status update failed");
+    console.log("❌ Status update failed:", e.message);
   }
 }
 
+// LOAD DATA
 function loadData() {
   try {
     return JSON.parse(fs.readFileSync("./data.json"));
@@ -38,6 +42,7 @@ function loadData() {
   }
 }
 
+// ROTATE REPLIES
 function getNextReply(replies) {
   if (!replies.length) return "Hi! I can help 🙂";
   const reply = replies[replyIndex];
@@ -45,6 +50,7 @@ function getNextReply(replies) {
   return reply;
 }
 
+// MAIN BOT
 async function runBot() {
   console.log("🔍 Scanning for leads...");
 
@@ -55,7 +61,7 @@ async function runBot() {
     return;
   }
 
-  // 🔥 RESET STATUS EACH RUN
+  // RESET STATUS
   status = {
     running: true,
     loggedIn: false,
@@ -82,7 +88,7 @@ async function runBot() {
     await page.click("button[name='login']");
     await page.waitForTimeout(8000);
 
-    // 🔥 LOGIN SUCCESS
+    // LOGIN SUCCESS
     status.loggedIn = true;
     await updateStatus({ loggedIn: true });
 
@@ -161,5 +167,5 @@ cron.schedule("*/10 * * * *", () => {
   runBot();
 });
 
-// Run immediately
+// RUN ON START
 runBot();
