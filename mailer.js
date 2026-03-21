@@ -2,7 +2,7 @@ const nodemailer = require("nodemailer");
 
 const transporter = nodemailer.createTransport({
   host: "smtp.ionos.co.uk",
-  port: 587,
+  port: 465,
   secure: false,
   auth: {
     user: "info@jarholidays.co.uk",
