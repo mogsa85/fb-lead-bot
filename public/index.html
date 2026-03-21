@@ -1,54 +1,160 @@
-
 <!DOCTYPE html>
 <html>
 <head>
   <title>Lead Bot Dashboard</title>
+  <style>
+    body {
+      font-family: Arial;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+
+    h1 {
+      color: #333;
+    }
+
+    input {
+      padding: 8px;
+      margin: 5px;
+      width: 300px;
+    }
+
+    button {
+      padding: 8px 12px;
+      margin: 5px;
+      cursor: pointer;
+    }
+
+    .box {
+      background: white;
+      padding: 15px;
+      margin-top: 20px;
+      border-radius: 8px;
+    }
+
+    .item {
+      display: flex;
+      justify-content: space-between;
+      margin: 5px 0;
+      padding: 5px;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .delete {
+      background: red;
+      color: white;
+      border: none;
+    }
+  </style>
 </head>
 <body>
-  <h1>Lead Bot Dashboard</h1>
 
-  <h3>Add Facebook Group</h3>
+<h1>🚀 Lead Bot Dashboard</h1>
+
+<div class="box">
+  <h2>Add Group</h2>
   <input id="groupInput" placeholder="Group URL">
   <button onclick="addGroup()">Add</button>
+</div>
 
-  <h3>Add Keyword</h3>
+<div class="box">
+  <h2>Add Keyword</h2>
   <input id="keywordInput" placeholder="Keyword">
   <button onclick="addKeyword()">Add</button>
+</div>
 
-  <h3>Add Reply</h3>
+<div class="box">
+  <h2>Add Reply</h2>
   <input id="replyInput" placeholder="Reply">
   <button onclick="addReply()">Add</button>
+</div>
 
-  <script>
-    async function addGroup() {
-      const group = document.getElementById("groupInput").value;
-      await fetch("/api/groups", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ group })
-      });
-      alert("Group added");
-    }
+<div class="box">
+  <h2>Groups</h2>
+  <div id="groupsList"></div>
+</div>
 
-    async function addKeyword() {
-      const keyword = document.getElementById("keywordInput").value;
-      await fetch("/api/keywords", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ keyword })
-      });
-      alert("Keyword added");
-    }
+<div class="box">
+  <h2>Keywords</h2>
+  <div id="keywordsList"></div>
+</div>
 
-    async function addReply() {
-      const reply = document.getElementById("replyInput").value;
-      await fetch("/api/replies", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ reply })
-      });
-      alert("Reply added");
-    }
-  </script>
+<div class="box">
+  <h2>Replies</h2>
+  <div id="repliesList"></div>
+</div>
+
+<script>
+async function loadData() {
+  const res = await fetch("/api/data");
+  const data = await res.json();
+
+  renderList("groupsList", data.groups, "groups");
+  renderList("keywordsList", data.keywords, "keywords");
+  renderList("repliesList", data.replies, "replies");
+}
+
+function renderList(elementId, items, type) {
+  const container = document.getElementById(elementId);
+  container.innerHTML = "";
+
+  items.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "item";
+
+    div.innerHTML = `
+      <span>${item}</span>
+      <button class="delete" onclick="deleteItem('${type}', \`${item}\`)">Delete</button>
+    `;
+
+    container.appendChild(div);
+  });
+}
+
+async function addGroup() {
+  const group = document.getElementById("groupInput").value;
+  await fetch("/api/groups", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ group })
+  });
+  document.getElementById("groupInput").value = "";
+  loadData();
+}
+
+async function addKeyword() {
+  const keyword = document.getElementById("keywordInput").value;
+  await fetch("/api/keywords", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ keyword })
+  });
+  document.getElementById("keywordInput").value = "";
+  loadData();
+}
+
+async function addReply() {
+  const reply = document.getElementById("replyInput").value;
+  await fetch("/api/replies", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ reply })
+  });
+  document.getElementById("replyInput").value = "";
+  loadData();
+}
+
+async function deleteItem(type, value) {
+  await fetch(`/api/${type}`, {
+    method: "DELETE",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ [type.slice(0, -1)]: value })
+  });
+  loadData();
+}
+
+loadData();
+</script>
+
 </body>
 </html>
