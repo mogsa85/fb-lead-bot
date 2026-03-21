@@ -1,8 +1,7 @@
-const sendEmail = require("./mailer");
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
-const sendEmail = require("./mailer"); // ✅ ONLY ONCE
+const sendEmail = require("./mailer");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -98,7 +97,7 @@ app.delete("/api/replies", (req, res) => {
   res.json({ success: true });
 });
 
-// ✅ TEST EMAIL ROUTE
+// TEST EMAIL
 app.get("/test-email", (req, res) => {
   sendEmail(
     "🔥 Test Email",
