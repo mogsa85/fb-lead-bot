@@ -25,8 +25,8 @@ async function runBot() {
 
   // LOGIN (first run may need manual session later)
   await page.goto("https://www.facebook.com/");
-  await page.fill("#email", "YOUR_FACEBOOK_EMAIL");
-  await page.fill("#pass", "YOUR_FACEBOOK_PASSWORD");
+  await page.fill("#email", "camplarry2024@jarholidays.co.uk");
+  await page.fill("#pass", "Safety99!!");
   await page.click("button[name='login']");
   await page.waitForTimeout(8000);
 
