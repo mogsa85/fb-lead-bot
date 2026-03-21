@@ -1,6 +1,7 @@
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
+const sendEmail = require("./mailer"); // ✅ ONLY ONCE
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -88,9 +89,6 @@ app.delete("/api/keywords", (req, res) => {
   res.json({ success: true });
 });
 
-const sendEmail = require("./mailer");
-
-
 // DELETE REPLY
 app.delete("/api/replies", (req, res) => {
   const data = loadData();
@@ -99,12 +97,7 @@ app.delete("/api/replies", (req, res) => {
   res.json({ success: true });
 });
 
-// Health check
-app.get("/health", (req, res) => {
-  res.send("OK");
-});
-const sendEmail = require("./mailer");
-
+// ✅ TEST EMAIL ROUTE
 app.get("/test-email", (req, res) => {
   sendEmail(
     "🔥 Test Email",
@@ -113,6 +106,12 @@ app.get("/test-email", (req, res) => {
 
   res.send("Attempted to send email (check logs)");
 });
+
+// Health check
+app.get("/health", (req, res) => {
+  res.send("OK");
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log("🚀 Server running on port " + PORT);
