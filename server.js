@@ -90,13 +90,6 @@ app.delete("/api/keywords", (req, res) => {
 
 const sendEmail = require("./mailer");
 
-app.get("/test-email", async (req, res) => {
-  await sendEmail(
-    "🔥 Test Email",
-    "If you see this, your email system is working!"
-  );
-  res.send("Email sent!");
-});
 
 // DELETE REPLY
 app.delete("/api/replies", (req, res) => {
@@ -110,7 +103,16 @@ app.delete("/api/replies", (req, res) => {
 app.get("/health", (req, res) => {
   res.send("OK");
 });
+const sendEmail = require("./mailer");
 
+app.get("/test-email", (req, res) => {
+  sendEmail(
+    "🔥 Test Email",
+    "If you see this, email system is working"
+  );
+
+  res.send("Attempted to send email (check logs)");
+});
 // Start server
 app.listen(PORT, () => {
   console.log("🚀 Server running on port " + PORT);
