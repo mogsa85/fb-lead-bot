@@ -18,7 +18,7 @@ let status = {
 // 🔥 Send status to server
 async function updateStatus(update) {
   try {
-await fetch("https://YOUR-APP.up.railway.app/api/status", {
+await fetch("https://fb-lead-bot-production.up.railway.app//api/status", {
   method: "POST",
       headers: {
         "Content-Type": "application/json"
