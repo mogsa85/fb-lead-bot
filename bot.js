@@ -7,10 +7,15 @@ let replyIndex = 0;
 const seenPosts = new Set();
 
 function loadData() {
-  return JSON.parse(fs.readFileSync("./data.json"));
+  try {
+    return JSON.parse(fs.readFileSync("./data.json"));
+  } catch {
+    return { groups: [], keywords: [], replies: [] };
+  }
 }
 
 function getNextReply(replies) {
+  if (!replies.length) return "Hi! I can help 🙂";
   const reply = replies[replyIndex];
   replyIndex = (replyIndex + 1) % replies.length;
   return reply;
@@ -20,47 +25,68 @@ async function runBot() {
   console.log("🔍 Scanning for leads...");
 
   const data = loadData();
-  const browser = await chromium.launch({ headless: true });
+
+  if (!data.groups.length) {
+    console.log("❌ No groups added");
+    return;
+  }
+
+  const browser = await chromium.launch({
+    headless: true,
+    args: ["--no-sandbox"]
+  });
+
   const page = await browser.newPage();
 
-  // LOGIN (first run may need manual session later)
-  await page.goto("https://www.facebook.com/");
-  await page.fill("#email", "camplarry2024@jarholidays.co.uk");
-  await page.fill("#pass", "Safety99!!");
-  await page.click("button[name='login']");
-  await page.waitForTimeout(8000);
+  try {
+    console.log("🔐 Logging into Facebook...");
 
-  for (const group of data.groups) {
-    console.log("Checking group:", group);
+    await page.goto("https://www.facebook.com/");
+    await page.fill("#email", "camplarry2024@jarholidays.co.uk");
+    await page.fill("#pass", "Safety99!!");
+    await page.click("button[name='login']");
+    await page.waitForTimeout(8000);
 
-    await page.goto(group);
-    await page.waitForTimeout(5000);
+    for (const group of data.groups) {
+      console.log("📂 Checking group:", group);
 
-    const posts = await page.$$("[role='article']");
+      await page.goto(group);
+      await page.waitForTimeout(5000);
 
-    for (const post of posts) {
-      const text = await post.innerText();
-      if (!text) continue;
+      const posts = await page.$$("[role='article']");
 
-      const lower = text.toLowerCase();
+      console.log(`📝 Found ${posts.length} posts`);
 
-      const matched = data.keywords.some(k =>
-        lower.includes(k.toLowerCase())
-      );
+      for (const post of posts) {
+        const text = await post.innerText();
+        if (!text) continue;
 
-      if (!matched) continue;
+        console.log("📝 Post:", text.slice(0, 80));
 
-      const linkEl = await post.$("a[href*='/posts/']");
-      if (!linkEl) continue;
+        const lower = text.toLowerCase();
 
-      const link = await linkEl.getAttribute("href");
-      if (!link || seenPosts.has(link)) continue;
+        const matched = data.keywords.some(k =>
+          lower.includes(k.toLowerCase())
+        );
 
-      seenPosts.add(link);
+        if (!matched) continue;
 
-      const reply = getNextReply(data.replies);
+        console.log("✅ MATCH FOUND!");
 
-      const message = `
+        const linkEl = await post.$("a[href*='/posts/']");
+        if (!linkEl) continue;
+
+        const link = await linkEl.getAttribute("href");
+        if (!link || seenPosts.has(link)) {
+          console.log("⚠️ Already seen post");
+          continue;
+        }
+
+        seenPosts.add(link);
+
+        const reply = getNextReply(data.replies);
+
+        const message = `
 🔥 New Caravan Lead
 
 Post:
@@ -73,8 +99,16 @@ Post:
 https://facebook.com${link}
 `;
 
-      await sendEmail("🔥 New Caravan Lead", message);
+        console.log("📧 Sending email...");
+
+        await sendEmail("🔥 New Caravan Lead", message);
+
+        console.log("✅ Email sent for lead");
+      }
     }
+
+  } catch (err) {
+    console.error("❌ Bot error:", err.message);
   }
 
   await browser.close();
@@ -85,5 +119,5 @@ cron.schedule("*/10 * * * *", () => {
   runBot();
 });
 
-// Run immediately on start
+// Run immediately
 runBot();
