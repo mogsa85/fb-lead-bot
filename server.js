@@ -11,6 +11,15 @@ app.use(express.static(path.join(__dirname, "public")));
 
 const DATA_FILE = path.join(__dirname, "data.json");
 
+// 🔥 BOT STATUS (NEW)
+let botStatus = {
+  running: false,
+  loggedIn: false,
+  lastScan: null,
+  postsChecked: 0,
+  matchesFound: 0
+};
+
 // Load data
 function loadData() {
   if (!fs.existsSync(DATA_FILE)) {
@@ -32,6 +41,17 @@ app.get("/", (req, res) => {
 // Get all data
 app.get("/api/data", (req, res) => {
   res.json(loadData());
+});
+
+// 🔥 GET BOT STATUS (NEW)
+app.get("/api/status", (req, res) => {
+  res.json(botStatus);
+});
+
+// 🔥 UPDATE BOT STATUS (NEW)
+app.post("/api/status", (req, res) => {
+  botStatus = { ...botStatus, ...req.body };
+  res.json({ success: true });
 });
 
 // ADD GROUP
