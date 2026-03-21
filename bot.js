@@ -18,8 +18,8 @@ let status = {
 // 🔥 Send status to server
 async function updateStatus(update) {
   try {
-    await fetch("http://localhost:3000/api/status", {
-      method: "POST",
+await fetch("https://YOUR-APP.up.railway.app/api/status", {
+  method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
