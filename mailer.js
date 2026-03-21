@@ -1,27 +1,27 @@
-const nodemailer = require("nodemailer");
+const fetch = require("node-fetch");
 
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
-  auth: {
-    user: "jarshortbreaks@gmail.com",
-    pass: "clyegpzmnmvjvzgw"
-  }
-});
+const API_KEY = "re_FDH2VNzu_Fdwqz5BQW16f3XsJNq6HMqin";
 
 async function sendEmail(subject, message) {
   try {
-    console.log("📧 Trying to send email...");
+    console.log("📧 Sending via Resend...");
 
-    const info = await transporter.sendMail({
-      from: '"Jar Holidays Leads" <jarshortbreaks@gmail.com>',
-      to: "info@jarholidays.co.uk",
-      subject: subject,
-      text: message
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        from: "onboarding@resend.dev",
+        to: ["info@jarholidays.co.uk"],
+        subject: subject,
+        text: message
+      })
     });
 
-    console.log("✅ Email sent:", info.response);
+    const data = await res.json();
+    console.log("✅ Email sent:", data);
   } catch (err) {
     console.error("❌ Email failed:", err.message);
   }
