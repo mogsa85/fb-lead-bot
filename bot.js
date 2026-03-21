@@ -6,6 +6,30 @@ const sendEmail = require("./mailer");
 let replyIndex = 0;
 const seenPosts = new Set();
 
+// 🔥 STATUS OBJECT (local tracking)
+let status = {
+  running: false,
+  loggedIn: false,
+  lastScan: null,
+  postsChecked: 0,
+  matchesFound: 0
+};
+
+// 🔥 Send status to server
+async function updateStatus(update) {
+  try {
+    await fetch("http://localhost:3000/api/status", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(update)
+    });
+  } catch (e) {
+    console.log("Status update failed");
+  }
+}
+
 function loadData() {
   try {
     return JSON.parse(fs.readFileSync("./data.json"));
@@ -31,6 +55,17 @@ async function runBot() {
     return;
   }
 
+  // 🔥 RESET STATUS EACH RUN
+  status = {
+    running: true,
+    loggedIn: false,
+    lastScan: new Date().toLocaleTimeString(),
+    postsChecked: 0,
+    matchesFound: 0
+  };
+
+  await updateStatus(status);
+
   const browser = await chromium.launch({
     headless: true,
     args: ["--no-sandbox"]
@@ -47,6 +82,10 @@ async function runBot() {
     await page.click("button[name='login']");
     await page.waitForTimeout(8000);
 
+    // 🔥 LOGIN SUCCESS
+    status.loggedIn = true;
+    await updateStatus({ loggedIn: true });
+
     for (const group of data.groups) {
       console.log("📂 Checking group:", group);
 
@@ -54,12 +93,14 @@ async function runBot() {
       await page.waitForTimeout(5000);
 
       const posts = await page.$$("[role='article']");
-
       console.log(`📝 Found ${posts.length} posts`);
 
       for (const post of posts) {
         const text = await post.innerText();
         if (!text) continue;
+
+        status.postsChecked++;
+        await updateStatus({ postsChecked: status.postsChecked });
 
         console.log("📝 Post:", text.slice(0, 80));
 
@@ -72,6 +113,9 @@ async function runBot() {
         if (!matched) continue;
 
         console.log("✅ MATCH FOUND!");
+
+        status.matchesFound++;
+        await updateStatus({ matchesFound: status.matchesFound });
 
         const linkEl = await post.$("a[href*='/posts/']");
         if (!linkEl) continue;
@@ -100,9 +144,7 @@ https://facebook.com${link}
 `;
 
         console.log("📧 Sending email...");
-
         await sendEmail("🔥 New Caravan Lead", message);
-
         console.log("✅ Email sent for lead");
       }
     }
