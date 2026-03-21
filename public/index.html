@@ -45,30 +45,50 @@
       color: white;
       border: none;
     }
+
+    .status-good {
+      color: green;
+      font-weight: bold;
+    }
+
+    .status-bad {
+      color: red;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
 
 <h1>🚀 Lead Bot Dashboard</h1>
 
+<!-- 🔥 BOT STATUS -->
+<div class="box">
+  <h2>🤖 Bot Status</h2>
+  <div id="status">Loading...</div>
+</div>
+
+<!-- ADD GROUP -->
 <div class="box">
   <h2>Add Group</h2>
   <input id="groupInput" placeholder="Group URL">
   <button onclick="addGroup()">Add</button>
 </div>
 
+<!-- ADD KEYWORD -->
 <div class="box">
   <h2>Add Keyword</h2>
   <input id="keywordInput" placeholder="Keyword">
   <button onclick="addKeyword()">Add</button>
 </div>
 
+<!-- ADD REPLY -->
 <div class="box">
   <h2>Add Reply</h2>
   <input id="replyInput" placeholder="Reply">
   <button onclick="addReply()">Add</button>
 </div>
 
+<!-- LISTS -->
 <div class="box">
   <h2>Groups</h2>
   <div id="groupsList"></div>
@@ -85,6 +105,7 @@
 </div>
 
 <script>
+// LOAD DATA
 async function loadData() {
   const res = await fetch("/api/data");
   const data = await res.json();
@@ -94,6 +115,7 @@ async function loadData() {
   renderList("repliesList", data.replies, "replies");
 }
 
+// RENDER LISTS
 function renderList(elementId, items, type) {
   const container = document.getElementById(elementId);
   container.innerHTML = "";
@@ -111,6 +133,7 @@ function renderList(elementId, items, type) {
   });
 }
 
+// ADD FUNCTIONS
 async function addGroup() {
   const group = document.getElementById("groupInput").value;
   await fetch("/api/groups", {
@@ -144,6 +167,7 @@ async function addReply() {
   loadData();
 }
 
+// DELETE
 async function deleteItem(type, value) {
   await fetch(`/api/${type}`, {
     method: "DELETE",
@@ -153,7 +177,32 @@ async function deleteItem(type, value) {
   loadData();
 }
 
+// 🔥 LOAD BOT STATUS
+async function loadStatus() {
+  const res = await fetch("/api/status");
+  const s = await res.json();
+
+  document.getElementById("status").innerHTML = `
+    <p class="${s.running ? 'status-good' : 'status-bad'}">
+      🟢 Running: ${s.running}
+    </p>
+    <p class="${s.loggedIn ? 'status-good' : 'status-bad'}">
+      🔐 Logged In: ${s.loggedIn}
+    </p>
+    <p>⏱ Last Scan: ${s.lastScan || 'N/A'}</p>
+    <p>📝 Posts Checked: ${s.postsChecked}</p>
+    <p>🔥 Matches Found: ${s.matchesFound}</p>
+  `;
+}
+
+// AUTO REFRESH
+setInterval(() => {
+  loadStatus();
+}, 3000);
+
+// INITIAL LOAD
 loadData();
+loadStatus();
 </script>
 
 </body>
