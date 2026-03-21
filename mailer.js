@@ -1,5 +1,3 @@
-const fetch = require("node-fetch");
-
 const API_KEY = "re_FDH2VNzu_Fdwqz5BQW16f3XsJNq6HMqin";
 
 async function sendEmail(subject, message) {
@@ -22,6 +20,7 @@ async function sendEmail(subject, message) {
 
     const data = await res.json();
     console.log("✅ Email sent:", data);
+
   } catch (err) {
     console.error("❌ Email failed:", err.message);
   }
