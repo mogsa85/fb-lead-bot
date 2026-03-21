@@ -12,7 +12,7 @@ async function sendEmail(subject, message) {
       },
       body: JSON.stringify({
         from: "onboarding@resend.dev",
-        to: ["info@jarholidays.co.uk"],
+to: ["robertmogsa85@gmail.com"],
         subject: subject,
         text: message
       })
