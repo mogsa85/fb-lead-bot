@@ -88,6 +88,16 @@ app.delete("/api/keywords", (req, res) => {
   res.json({ success: true });
 });
 
+const sendEmail = require("./mailer");
+
+app.get("/test-email", async (req, res) => {
+  await sendEmail(
+    "🔥 Test Email",
+    "If you see this, your email system is working!"
+  );
+  res.send("Email sent!");
+});
+
 // DELETE REPLY
 app.delete("/api/replies", (req, res) => {
   const data = loadData();
