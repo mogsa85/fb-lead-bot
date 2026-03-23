@@ -141,9 +141,41 @@ app.listen(PORT, () => {
   console.log("🚀 Server running on port " + PORT);
 });
 
+function ensureStorageStateFile() {
+  const storageStatePath = process.env.STORAGE_STATE_PATH || "storageState.json";
+  const resolvedPath = path.isAbsolute(storageStatePath)
+    ? storageStatePath
+    : path.join(__dirname, storageStatePath);
+
+  // If file already exists (e.g. uploaded as a Railway file/volume), do nothing.
+  if (fs.existsSync(resolvedPath)) return resolvedPath;
+
+  // Alternative: reconstruct from env var.
+  // Use base64 to avoid JSON escaping issues.
+  const b64 = process.env.STORAGE_STATE_JSON_B64;
+  const rawJson = process.env.STORAGE_STATE_JSON;
+
+  if (b64) {
+    const buf = Buffer.from(b64, "base64");
+    fs.writeFileSync(resolvedPath, buf);
+    console.log("✅ storageState.json written from STORAGE_STATE_JSON_B64");
+    return resolvedPath;
+  }
+
+  if (rawJson) {
+    // Validate it's JSON so we fail fast.
+    JSON.parse(rawJson);
+    fs.writeFileSync(resolvedPath, rawJson, "utf8");
+    console.log("✅ storageState.json written from STORAGE_STATE_JSON");
+    return resolvedPath;
+  }
+
+  return resolvedPath;
+}
+
 // Start the scanner in-process so the dashboard status stays accurate.
 startBot({
-  storageStatePath: process.env.STORAGE_STATE_PATH || "storageState.json",
+  storageStatePath: ensureStorageStateFile(),
   updateStatus: (update) => {
     botStatus = { ...botStatus, ...update };
   }
